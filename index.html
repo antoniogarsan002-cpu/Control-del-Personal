@@ -24,7 +24,7 @@
             </h1>
             <div class="flex items-center space-x-3">
                 <span id="syncBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-sm">
-                    <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Conectado
+                    <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Conectando...
                 </span>
                 <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5">
                     <i class="fa-solid fa-file-csv"></i> Exportar CSV
@@ -250,9 +250,25 @@
 
     </main>
 
-    <!-- SCRIPT DE ALMACENAMIENTO LOCAL Y SINCRONIZACIÓN -->
-    <script>
-        let appState = JSON.parse(localStorage.getItem('agro_dataset_v2')) || {
+    <!-- FIREBASE Y LÓGICA DE DATOS -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD0z_EapsDSxwMBWdixJcfut9KO7krE4Rc",
+            authDomain: "control-personal-agricola.firebaseapp.com",
+            projectId: "control-personal-agricola",
+            storageBucket: "control-personal-agricola.firebasestorage.app",
+            messagingSenderId: "569248393084",
+            appId: "1:569248393084:web:d5db7e8366695af45c66f9",
+            measurementId: "G-Z660DMMFNP"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let appState = {
             workers: [
                 { id: 'w1', name: 'RUIZ ALVAREZ IGNACIO', type: 'Fijo' },
                 { id: 'w2', name: 'SANCHEZ CABAÑAS OSCAR', type: 'Fijo' },
@@ -270,12 +286,22 @@
             jornadas: []
         };
 
-        function saveData() {
-            localStorage.setItem('agro_dataset_v2', JSON.stringify(appState));
+        const docRef = doc(db, "appData", "main_dataset");
+
+        window.saveData = async function() {
+            try {
+                await setDoc(docRef, appState);
+                document.getElementById('syncBadge').className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-sm";
+                document.getElementById('syncBadge').innerHTML = '<i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Conectado';
+            } catch (error) {
+                console.error("Error al guardar en Firebase: ", error);
+                document.getElementById('syncBadge').className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white shadow-sm";
+                document.getElementById('syncBadge').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-[8px]"></i> Error al sincronizar';
+            }
             refreshUI();
         }
 
-        function handleAddWorker(e) {
+        window.handleAddWorker = function(e) {
             e.preventDefault();
             const input = document.getElementById('workerNameInput');
             const typeSel = document.getElementById('workerTypeInput');
@@ -290,7 +316,7 @@
             saveData();
         }
 
-        function toggleWorkerType(id) {
+        window.toggleWorkerType = function(id) {
             const worker = appState.workers.find(w => w.id === id);
             if (worker) {
                 worker.type = worker.type === 'Fijo' ? 'Eventual' : 'Fijo';
@@ -301,13 +327,13 @@
             }
         }
 
-        function deleteWorker(id) {
+        window.deleteWorker = function(id) {
             if (!confirm("¿Estás seguro de eliminar este trabajador?")) return;
             appState.workers = appState.workers.filter(w => w.id !== id);
             saveData();
         }
 
-        function filterWorkersDropdown() {
+        window.filterWorkersDropdown = function() {
             const filterVal = document.getElementById('jTypeFilter').value;
             const selectEl = document.getElementById('jWorkerSelect');
             
@@ -322,7 +348,7 @@
                 : '<option value="">No hay trabajadores en esta categoría</option>';
         }
 
-        function handleAddJornada(e) {
+        window.handleAddJornada = function(e) {
             e.preventDefault();
             const workerSelect = document.getElementById('jWorkerSelect');
             const workerName = workerSelect.value;
@@ -362,10 +388,10 @@
             appState.jornadas.push(nuevoRegistro);
             saveData();
             document.getElementById('jornadaForm').reset();
-            alert("¡Registro guardado correctamente!");
+            alert("¡Registro guardado correctamente en la nube!");
         }
 
-        function deleteJornada(id) {
+        window.deleteJornada = function(id) {
             if (!confirm("¿Deseas eliminar este registro del dataset?")) return;
             appState.jornadas = appState.jornadas.filter(j => j.id !== id);
             saveData();
@@ -481,7 +507,7 @@
             `).join('');
         }
 
-        function exportCSV() {
+        window.exportCSV = function() {
             if (appState.jornadas.length === 0) {
                 alert("No hay registros en el dataset para exportar.");
                 return;
@@ -511,9 +537,17 @@
                 .replace(/'/g, '&#039;');
         }
 
-        window.onload = function() {
-            refreshUI();
-        };
+        onSnapshot(docRef, async (docSnap) => {
+            if (docSnap.exists()) {
+                appState = docSnap.data();
+                refreshUI();
+            } else {
+                await setDoc(docRef, appState);
+                refreshUI();
+            }
+        }, (error) => {
+            console.error("Error al escuchar Firestore: ", error);
+        });
     </script>
 </body>
 </html>
