@@ -16,7 +16,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 h-full flex flex-col">
 
-    <!-- HEADER IDÉNTICO A TUS FOTOS -->
+    <!-- HEADER -->
     <header class="bg-[#1e293b] text-white shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <h1 class="font-bold text-base sm:text-lg tracking-tight flex items-center gap-2">
@@ -24,7 +24,7 @@
             </h1>
             <div class="flex items-center space-x-3">
                 <span id="syncBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-sm">
-                    <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Conectando...
+                    <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Conectado
                 </span>
                 <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5">
                     <i class="fa-solid fa-file-csv"></i> Exportar CSV
@@ -42,7 +42,6 @@
                 <h2 class="font-bold text-slate-900 text-sm sm:text-base">Gestión de Plantilla (Añadir / Cambiar Tipo / Borrar)</h2>
             </div>
 
-            <!-- Formulario para añadir trabajador -->
             <form id="workerForm" onsubmit="handleAddWorker(event)" class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-5 items-end bg-slate-50 p-4 rounded-xl border border-slate-200">
                 <div class="md:col-span-5">
                     <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nombre y Apellidos del Trabajador</label>
@@ -73,9 +72,7 @@
                             <th class="px-4 py-2.5 text-center font-semibold text-slate-600">Acciones Rápidas</th>
                         </tr>
                     </thead>
-                    <tbody id="workersTableBody" class="bg-white divide-y divide-slate-200">
-                        <!-- Rellenado dinámicamente -->
-                    </tbody>
+                    <tbody id="workersTableBody" class="bg-white divide-y divide-slate-200"></tbody>
                 </table>
             </div>
         </div>
@@ -124,9 +121,7 @@
 
                 <div class="sm:col-span-2 lg:col-span-3">
                     <label class="block text-[11px] font-semibold text-slate-600 mb-1">2. Trabajador</label>
-                    <select id="jWorkerSelect" required class="w-full text-xs rounded-lg border border-slate-300 px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
-                        <!-- Rellenado dinámicamente -->
-                    </select>
+                    <select id="jWorkerSelect" required class="w-full text-xs rounded-lg border border-slate-300 px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium"></select>
                 </div>
 
                 <div>
@@ -177,8 +172,14 @@
                         class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
                 </div>
 
-                <div class="sm:col-span-2 lg:col-span-2">
-                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nombre / Nº de Vehículo</label>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Precio Coche / Tractor (€)</label>
+                    <input type="number" step="0.01" id="jPrecioVehiculo" value="0" min="0" required 
+                        class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
+                </div>
+
+                <div class="sm:col-span-2 lg:col-span-1">
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Nombre / Nº Vehículo</label>
                     <input type="text" id="jVehiculo" placeholder="Ej: Tractor 3" 
                         class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
                 </div>
@@ -211,14 +212,12 @@
                             <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Besana</th>
                             <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Faena</th>
                             <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Gasoil</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Vehículo</th>
+                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Vehículo / Precio</th>
                             <th class="px-3 py-2.5 text-right font-semibold text-slate-700">Total Bruto (€)</th>
                             <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="historyTableBody" class="bg-white divide-y divide-slate-200">
-                        <!-- Rellenado dinámicamente -->
-                    </tbody>
+                    <tbody id="historyTableBody" class="bg-white divide-y divide-slate-200"></tbody>
                 </table>
             </div>
         </div>
@@ -241,9 +240,7 @@
                             <th class="px-4 py-2.5 text-right font-semibold text-slate-700">Total Bruto a Pagar (€)</th>
                         </tr>
                     </thead>
-                    <tbody id="summaryTableBody" class="bg-white divide-y divide-slate-200 font-medium">
-                        <!-- Rellenado dinámicamente -->
-                    </tbody>
+                    <tbody id="summaryTableBody" class="bg-white divide-y divide-slate-200 font-medium"></tbody>
                 </table>
             </div>
         </div>
@@ -253,7 +250,7 @@
     <!-- FIREBASE Y LÓGICA DE DATOS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD0z_EapsDSxwMBWdixJcfut9KO7krE4Rc",
@@ -365,7 +362,12 @@
             const precioNormal = parseFloat(document.getElementById('jPrecioNormal').value) || 0;
             const hExtras = parseFloat(document.getElementById('jHExtras').value) || 0;
             const precioExtra = parseFloat(document.getElementById('jPrecioExtra').value) || 0;
-            const totalBruto = (hNormales * precioNormal) + (hExtras * precioExtra);
+            
+            const cantCoche = parseFloat(document.getElementById('jCoche').value) || 0;
+            const precioVehiculo = parseFloat(document.getElementById('jPrecioVehiculo').value) || 0;
+            
+            // Cálculo del Total Bruto incluyendo el importe del vehículo/coche/tractor
+            const totalBruto = (hNormales * precioNormal) + (hExtras * precioExtra) + (cantCoche * precioVehiculo);
 
             const nuevoRegistro = {
                 id: 'j_' + Math.random().toString(36).substring(2, 9),
@@ -381,6 +383,8 @@
                 besana: parseInt(document.getElementById('jBesana').value) || 0,
                 faena: parseInt(document.getElementById('jFaena').value) || 0,
                 gasoil: parseFloat(document.getElementById('jGasoil').value) || 0,
+                coche: cantCoche,
+                precioVehiculo: precioVehiculo,
                 vehiculo: document.getElementById('jVehiculo').value.trim() || '-',
                 totalBruto: totalBruto.toFixed(2)
             };
@@ -449,7 +453,7 @@
                     <td class="px-3 py-2.5 text-center text-slate-700">${j.besana}</td>
                     <td class="px-3 py-2.5 text-center text-slate-700">${j.faena}</td>
                     <td class="px-3 py-2.5 text-center text-slate-700">${j.gasoil}</td>
-                    <td class="px-3 py-2.5 text-center text-slate-700">${escapeHtml(j.vehiculo)}</td>
+                    <td class="px-3 py-2.5 text-center text-slate-700">${j.coche || 0} (${j.precioVehiculo || 0}€) - ${escapeHtml(j.vehiculo)}</td>
                     <td class="px-3 py-2.5 text-right font-bold text-emerald-700">${j.totalBruto} €</td>
                     <td class="px-3 py-2.5 text-center">
                         <button type="button" onclick="deleteJornada('${j.id}')" class="bg-[#e74c3c] hover:bg-[#c0392b] text-white px-2.5 py-1 rounded text-[11px] transition shadow-sm">Eliminar</button>
@@ -513,9 +517,9 @@
                 return;
             }
 
-            let csv = "Mes,Dia,Trabajador,TipoPersonal,HorasNormales,PrecioNormal,HorasExtras,PrecioExtra,Besana,Faena,Gasoil,Vehiculo,TotalBruto\r\n";
+            let csv = "Mes,Dia,Trabajador,TipoPersonal,HorasNormales,PrecioNormal,HorasExtras,PrecioExtra,Besana,Faena,Gasoil,CocheTractorCant,PrecioVehiculo,Vehiculo,TotalBruto\r\n";
             appState.jornadas.forEach(j => {
-                csv += `"${j.mes}",${j.day},"${j.workerName}","${j.workerType}",${j.hNormales},${j.precioNormal},${j.hExtras},${j.precioExtra},${j.besana},${j.faena},${j.gasoil},"${j.vehiculo}",${j.totalBruto}\r\n`;
+                csv += `"${j.mes}",${j.day},"${j.workerName}","${j.workerType}",${j.hNormales},${j.precioNormal},${j.hExtras},${j.precioExtra},${j.besana},${j.faena},${j.gasoil},${j.coche || 0},${j.precioVehiculo || 0},"${j.vehiculo}",${j.totalBruto}\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
