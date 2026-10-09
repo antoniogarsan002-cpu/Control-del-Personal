@@ -206,6 +206,7 @@
                 <table class="min-w-full divide-y divide-slate-200 text-xs">
                     <thead class="bg-slate-50">
                         <tr>
+                            <th class="px-3 py-2.5 text-left font-semibold text-slate-600">ID Registro</th>
                             <th class="px-3 py-2.5 text-left font-semibold text-slate-600">Mes</th>
                             <th class="px-3 py-2.5 text-left font-semibold text-slate-600">Día</th>
                             <th class="px-3 py-2.5 text-left font-semibold text-slate-600">Trabajador</th>
@@ -221,8 +222,9 @@
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="bg-white divide-y divide-slate-200">
-                        <!-- FILA ESTÁTICA PARA QUE POWER BI LA LEA DIRECTAMENTE DESDE LA URL -->
+                        <!-- FILA ESTÁTICA CON ID PARA POWER BI -->
                         <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="px-3 py-2.5 font-mono text-[10px] text-slate-400">j_muestra01</td>
                             <td class="px-3 py-2.5 font-semibold text-slate-800">Diciembre</td>
                             <td class="px-3 py-2.5 font-medium text-slate-600">1</td>
                             <td class="px-3 py-2.5 font-bold text-slate-900">RUIZ ALVAREZ IGNACIO</td>
@@ -591,12 +593,13 @@
         function renderHistory() {
             const tbody = document.getElementById('historyTableBody');
             if (appState.jornadas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aún no hay jornadas registradas. Rellena el formulario arriba.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aún no hay jornadas registradas. Rellena el formulario arriba.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = appState.jornadas.map(j => `
                 <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="px-3 py-2.5 font-mono text-[10px] text-slate-400">${j.id}</td>
                     <td class="px-3 py-2.5 font-semibold text-slate-800">${escapeHtml(j.mes)}</td>
                     <td class="px-3 py-2.5 font-medium text-slate-600">${j.day}</td>
                     <td class="px-3 py-2.5 font-bold text-slate-900">${escapeHtml(j.workerName)}</td>
@@ -675,9 +678,9 @@
                 return;
             }
 
-            let csv = "Mes,Dia,Trabajador,TipoPersonal,HorasNormales,PrecioNormal,HorasExtras,PrecioExtra,Besana,Faena,Gasoil,CocheTractorCant,PrecioVehiculo,Vehiculo,TotalBruto\r\n";
+            let csv = "IDRegistro,Mes,Dia,Trabajador,TipoPersonal,HorasNormales,PrecioNormal,HorasExtras,PrecioExtra,Besana,Faena,Gasoil,CocheTractorCant,PrecioVehiculo,Vehiculo,TotalBruto\r\n";
             appState.jornadas.forEach(j => {
-                csv += `"${j.mes}",${j.day},"${j.workerName}","${j.workerType}",${j.hNormales},${j.precioNormal},${j.hExtras},${j.precioExtra},${j.besana},${j.faena},${j.gasoil},${j.coche || 0},${j.precioVehiculo || 0},"${j.vehiculo}",${j.totalBruto}\r\n`;
+                csv += `"${j.id}","${j.mes}",${j.day},"${j.workerName}","${j.workerType}",${j.hNormales},${j.precioNormal},${j.hExtras},${j.precioExtra},${j.besana},${j.faena},${j.gasoil},${j.coche || 0},${j.precioVehiculo || 0},"${j.vehiculo}",${j.totalBruto}\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
