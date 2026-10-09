@@ -203,26 +203,29 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-xs" id="tablaHistorialWeb">
+                <table class="min-w-full divide-y divide-slate-200 text-xs">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="px-3 py-2.5 text-left font-semibold text-slate-600">ID Registro</th>
-                            <th class="px-3 py-2.5 text-left font-semibold text-slate-600">Mes</th>
-                            <th class="px-3 py-2.5 text-left font-semibold text-slate-600">Día</th>
-                            <th class="px-3 py-2.5 text-left font-semibold text-slate-600">Trabajador</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Tipo</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">H. Normales</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">H. Extras</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Besana</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Faena</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Gasoil</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Vehículo / Precio</th>
-                            <th class="px-3 py-2.5 text-right font-semibold text-slate-700">Total Bruto (€)</th>
-                            <th class="px-3 py-2.5 text-center font-semibold text-slate-600">Acción</th>
+                            <th>IDRegistro</th>
+                            <th>Mes</th>
+                            <th>Dia</th>
+                            <th>Trabajador</th>
+                            <th>TipoPersonal</th>
+                            <th>HorasNormales</th>
+                            <th>PrecioNormal</th>
+                            <th>HorasExtras</th>
+                            <th>PrecioExtra</th>
+                            <th>Besana</th>
+                            <th>Faena</th>
+                            <th>Gasoil</th>
+                            <th>CocheTractorCant</th>
+                            <th>PrecioVehiculo</th>
+                            <th>Vehiculo</th>
+                            <th>TotalBruto</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="bg-white divide-y divide-slate-200">
-                        <!-- FILA INICIAL PARA QUE POWER BI DETECTE LA TABLA DESDE LA URL -->
+                        <!-- Fila de ejemplo estática para que Power BI pille la tabla limpia -->
                         <tr>
                             <td>j_demo</td>
                             <td>Diciembre</td>
@@ -230,13 +233,16 @@
                             <td>RUIZ ALVAREZ IGNACIO</td>
                             <td>Fijo</td>
                             <td>21</td>
+                            <td>2</td>
+                            <td>4</td>
                             <td>4</td>
                             <td>4</td>
                             <td>0</td>
                             <td>4</td>
                             <td>4</td>
+                            <td>4</td>
+                            <td>Tractor 1</td>
                             <td>74.00</td>
-                            <td>-</td>
                         </tr>
                     </tbody>
                 </table>
@@ -593,33 +599,29 @@
         function renderHistory() {
             const tbody = document.getElementById('historyTableBody');
             if (appState.jornadas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aún no hay jornadas registradas. Rellena el formulario arriba.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="16" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aún no hay jornadas registradas. Rellena el formulario arriba.</td></tr>`;
                 return;
             }
 
-            // Aquí se pintan TODOS tus registros reales en la tabla principal que Power BI lee
+            // Inyecta TODOS los registros de Firebase manteniendo las 16 columnas exactas para Power BI
             tbody.innerHTML = appState.jornadas.map(j => `
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-3 py-2.5 font-mono text-[10px] text-slate-400">${j.id}</td>
-                    <td class="px-3 py-2.5 font-semibold text-slate-800">${escapeHtml(j.mes)}</td>
-                    <td class="px-3 py-2.5 font-medium text-slate-600">${j.day}</td>
-                    <td class="px-3 py-2.5 font-bold text-slate-900">${escapeHtml(j.workerName)}</td>
-                    <td class="px-3 py-2.5 text-center">
-                        <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${j.workerType === 'Fijo' ? 'bg-[#3498db] text-white' : 'bg-[#f39c12] text-white'}">
-                            ${j.workerType}
-                        </span>
-                    </td>
-                    <td class="px-3 py-2.5 text-center text-slate-700">${j.hNormales}h (${j.precioNormal}€)</td>
-                    <td class="px-3 py-2.5 text-center text-slate-700">${j.hExtras}h (${j.precioExtra}€)</td>
-                    <td class="px-3 py-2.5 text-center text-slate-700">${j.besana}</td>
-                    <td class="px-3 py-2.5 text-center text-slate-700">${j.faena}</td>
-                    <td class="px-3 py-2.5 text-center text-slate-700">${j.gasoil}</td>
-                    <td class="px-3 py-2.5 text-center text-slate-700">${j.coche || 0} (${j.precioVehiculo || 0}€) - ${escapeHtml(j.vehiculo)}</td>
-                    <td class="px-3 py-2.5 text-right font-bold text-emerald-700">${j.totalBruto} €</td>
-                    <td class="px-3 py-2.5 text-center">
-                        <button type="button" onclick="editJornada('${j.id}')" class="bg-[#2980b9] hover:bg-[#2471a3] text-white px-2.5 py-1 rounded text-[11px] transition shadow-sm">Editar</button>
-                        <button type="button" onclick="deleteJornada('${j.id}')" class="bg-[#e74c3c] hover:bg-[#c0392b] text-white px-2.5 py-1 rounded text-[11px] transition shadow-sm">Eliminar</button>
-                    </td>
+                    <td>${j.id}</td>
+                    <td>${escapeHtml(j.mes)}</td>
+                    <td>${j.day}</td>
+                    <td>${escapeHtml(j.workerName)}</td>
+                    <td>${escapeHtml(j.workerType)}</td>
+                    <td>${j.hNormales}</td>
+                    <td>${j.precioNormal}</td>
+                    <td>${j.hExtras}</td>
+                    <td>${j.precioExtra}</td>
+                    <td>${j.besana}</td>
+                    <td>${j.faena}</td>
+                    <td>${j.gasoil}</td>
+                    <td>${j.coche || 0}</td>
+                    <td>${j.precioVehiculo || 0}</td>
+                    <td>${escapeHtml(j.vehiculo)}</td>
+                    <td>${j.totalBruto}</td>
                 </tr>
             `).join('');
         }
