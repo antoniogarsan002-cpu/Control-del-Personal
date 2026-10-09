@@ -202,8 +202,9 @@
                 <h2 class="font-bold text-slate-900 text-sm sm:text-base">Historial de Registros</h2>
             </div>
 
+            <!-- TABLA PRINCIPAL LECTURA POWER BI DIRECTA -->
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-xs">
+                <table class="min-w-full divide-y divide-slate-200 text-xs" id="tablaPowerBI">
                     <thead class="bg-slate-50">
                         <tr>
                             <th>IDRegistro</th>
@@ -225,9 +226,9 @@
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="bg-white divide-y divide-slate-200">
-                        <!-- Fila de ejemplo estática para que Power BI pille la tabla limpia -->
+                        <!-- Filas estáticas iniciales para que Power BI reconozca el esquema completo -->
                         <tr>
-                            <td>j_demo</td>
+                            <td>j_muestra1</td>
                             <td>Diciembre</td>
                             <td>1</td>
                             <td>RUIZ ALVAREZ IGNACIO</td>
@@ -243,6 +244,24 @@
                             <td>4</td>
                             <td>Tractor 1</td>
                             <td>74.00</td>
+                        </tr>
+                        <tr>
+                            <td>j_muestra2</td>
+                            <td>Diciembre</td>
+                            <td>2</td>
+                            <td>RUIZ ALVAREZ IGNACIO</td>
+                            <td>Fijo</td>
+                            <td>45</td>
+                            <td>5</td>
+                            <td>7</td>
+                            <td>7</td>
+                            <td>7</td>
+                            <td>7</td>
+                            <td>7</td>
+                            <td>7</td>
+                            <td>7</td>
+                            <td>Tractor 2</td>
+                            <td>323.00</td>
                         </tr>
                     </tbody>
                 </table>
