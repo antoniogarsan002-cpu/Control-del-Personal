@@ -184,9 +184,12 @@
                         class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
                 </div>
 
-                <div class="sm:col-span-2 lg:col-span-2 flex items-end">
-                    <button type="submit" class="w-full bg-[#27ae60] hover:bg-[#219653] text-white font-medium text-xs py-2.5 px-4 rounded-lg transition shadow-sm flex items-center justify-center gap-2">
+                <div class="sm:col-span-2 lg:col-span-2 flex items-end gap-2">
+                    <button id="jornadaSubmitBtn" type="submit" class="w-full bg-[#27ae60] hover:bg-[#219653] text-white font-medium text-xs py-2.5 px-4 rounded-lg transition shadow-sm flex items-center justify-center gap-2">
                         <i class="fa-solid fa-floppy-disk"></i> Guardar Registro
+                    </button>
+                    <button id="cancelEditBtn" type="button" onclick="cancelEditJornada()" class="hidden whitespace-nowrap bg-slate-500 hover:bg-slate-600 text-white font-medium text-xs py-2.5 px-4 rounded-lg transition shadow-sm">
+                        Cancelar edición
                     </button>
                 </div>
             </form>
@@ -308,6 +311,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        let editingJornadaId = null;
 
         let appState = {
             workers: [
@@ -334,12 +338,15 @@
                 await setDoc(docRef, appState);
                 document.getElementById('syncBadge').className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-sm";
                 document.getElementById('syncBadge').innerHTML = '<i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Conectado';
+                refreshUI();
+                return true;
             } catch (error) {
                 console.error("Error al guardar en Firebase: ", error);
                 document.getElementById('syncBadge').className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white shadow-sm";
                 document.getElementById('syncBadge').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-[8px]"></i> Error al sincronizar';
+                refreshUI();
+                return false;
             }
-            refreshUI();
         }
 
         window.handleAddWorker = function(e) {
@@ -425,7 +432,7 @@
             grid.innerHTML = html;
         }
 
-        window.handleAddJornada = function(e) {
+        window.handleAddJornada = async function(e) {
             e.preventDefault();
             const workerSelect = document.getElementById('jWorkerSelect');
             const workerName = workerSelect.value;
@@ -447,9 +454,11 @@
             const precioVehiculo = parseFloat(document.getElementById('jPrecioVehiculo').value) || 0;
             
             const totalBruto = (hNormales * precioNormal) + (hExtras * precioExtra) + (cantCoche * precioVehiculo);
+            const wasEditing = Boolean(editingJornadaId);
+            const previousJornadas = appState.jornadas.map(j => ({ ...j }));
 
             const nuevoRegistro = {
-                id: 'j_' + Math.random().toString(36).substring(2, 9),
+                id: editingJornadaId || 'j_' + Math.random().toString(36).substring(2, 9),
                 mes: document.getElementById('jMes').value,
                 day: parseInt(document.getElementById('jDay').value) || 1,
                 workerId: workerId,
@@ -468,10 +477,61 @@
                 totalBruto: totalBruto.toFixed(2)
             };
 
-            appState.jornadas.push(nuevoRegistro);
-            saveData();
+            if (wasEditing) {
+                const jornadaIndex = appState.jornadas.findIndex(j => j.id === editingJornadaId);
+                if (jornadaIndex !== -1) {
+                    appState.jornadas[jornadaIndex] = nuevoRegistro;
+                } else {
+                    appState.jornadas.push(nuevoRegistro);
+                }
+            } else {
+                appState.jornadas.push(nuevoRegistro);
+            }
+
+            const saved = await saveData();
+            if (!saved) {
+                appState.jornadas = previousJornadas;
+                refreshUI();
+                return;
+            }
+
+            cancelEditJornada();
+            alert(wasEditing ? "¡Registro actualizado correctamente en la nube!" : "¡Registro guardado correctamente en la nube!");
+        }
+
+        window.editJornada = function(id) {
+            const jornada = appState.jornadas.find(j => j.id === id);
+            if (!jornada) return;
+
+            editingJornadaId = id;
+            document.getElementById('jMes').value = jornada.mes;
+            document.getElementById('jDay').value = jornada.day;
+            document.getElementById('jTypeFilter').value = 'Todos';
+            filterWorkersDropdown();
+            document.getElementById('jWorkerSelect').value = jornada.workerName;
+            document.getElementById('jHNormales').value = jornada.hNormales;
+            document.getElementById('jPrecioNormal').value = jornada.precioNormal;
+            document.getElementById('jHExtras').value = jornada.hExtras;
+            document.getElementById('jPrecioExtra').value = jornada.precioExtra;
+            document.getElementById('jBesana').value = jornada.besana;
+            document.getElementById('jFaena').value = jornada.faena;
+            document.getElementById('jGasoil').value = jornada.gasoil;
+            document.getElementById('jCoche').value = jornada.coche;
+            document.getElementById('jPrecioVehiculo').value = jornada.precioVehiculo;
+            document.getElementById('jVehiculo').value = jornada.vehiculo === '-' ? '' : jornada.vehiculo;
+
+            document.getElementById('jornadaSubmitBtn').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Actualizar Registro';
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            document.getElementById('jornadaForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        window.cancelEditJornada = function() {
+            editingJornadaId = null;
             document.getElementById('jornadaForm').reset();
-            alert("¡Registro guardado correctamente en la nube!");
+            document.getElementById('jornadaSubmitBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Registro';
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+            document.getElementById('jTypeFilter').value = 'Todos';
+            filterWorkersDropdown();
         }
 
         window.deleteJornada = function(id) {
@@ -537,6 +597,7 @@
                     <td class="px-3 py-2.5 text-center text-slate-700">${j.coche || 0} (${j.precioVehiculo || 0}€) - ${escapeHtml(j.vehiculo)}</td>
                     <td class="px-3 py-2.5 text-right font-bold text-emerald-700">${j.totalBruto} €</td>
                     <td class="px-3 py-2.5 text-center">
+                        <button type="button" onclick="editJornada('${j.id}')" class="bg-[#2980b9] hover:bg-[#2471a3] text-white px-2.5 py-1 rounded text-[11px] transition shadow-sm">Editar</button>
                         <button type="button" onclick="deleteJornada('${j.id}')" class="bg-[#e74c3c] hover:bg-[#c0392b] text-white px-2.5 py-1 rounded text-[11px] transition shadow-sm">Eliminar</button>
                     </td>
                 </tr>
