@@ -755,16 +755,33 @@
                 .replace(/'/g, '&#039;');
         }
 
+        // Marcador para Power Query: solo aparece cuando Firebase ya ha
+        // reemplazado las filas de ejemplo por los datos reales.
+        function markPowerBIReady() {
+            let marker = document.getElementById('powerbiReady');
+            if (!marker) {
+                marker = document.createElement('span');
+                marker.id = 'powerbiReady';
+                marker.hidden = true;
+                document.body.appendChild(marker);
+            }
+            marker.dataset.rows = String(appState.jornadas.length);
+            marker.dataset.updatedAt = new Date().toISOString();
+        }
+
         onSnapshot(docRef, async (docSnap) => {
             if (docSnap.exists()) {
                 appState = docSnap.data();
                 refreshUI();
+                markPowerBIReady();
             } else {
                 await setDoc(docRef, appState);
                 refreshUI();
+                markPowerBIReady();
             }
         }, (error) => {
             console.error("Error al escuchar Firestore: ", error);
+            markPowerBIReady();
         });
     </script>
 </body>
