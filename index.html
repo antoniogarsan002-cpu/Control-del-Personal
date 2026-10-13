@@ -324,9 +324,29 @@
 
         <!-- SECCIÓN 5: RESUMEN BRUTO POR TRABAJADOR -->
         <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
-            <div class="flex items-center space-x-2 mb-4 pb-3 border-b border-slate-100 text-[#432874]">
-                <i class="fa-solid fa-calculator text-lg"></i>
-                <h2 class="font-bold text-slate-900 text-sm sm:text-base">Resumen Bruto por Trabajador (Totales para Analista)</h2>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 pb-3 border-b border-slate-100 gap-3">
+                <div class="flex items-center space-x-2 text-[#432874]">
+                    <i class="fa-solid fa-calculator text-lg"></i>
+                    <h2 class="font-bold text-slate-900 text-sm sm:text-base">Resumen Bruto por Trabajador (Totales para Analista)</h2>
+                </div>
+                <label class="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+                    Mes:
+                    <select id="summaryMesFilter" onchange="renderSummary()" class="text-xs rounded-lg border border-slate-300 px-2.5 py-1.5 bg-white font-medium">
+                        <option value="Todos" selected>Todos los meses</option>
+                        <option value="Enero">Enero</option>
+                        <option value="Febrero">Febrero</option>
+                        <option value="Marzo">Marzo</option>
+                        <option value="Abril">Abril</option>
+                        <option value="Mayo">Mayo</option>
+                        <option value="Junio">Junio</option>
+                        <option value="Julio">Julio</option>
+                        <option value="Agosto">Agosto</option>
+                        <option value="Septiembre">Septiembre</option>
+                        <option value="Octubre">Octubre</option>
+                        <option value="Noviembre">Noviembre</option>
+                        <option value="Diciembre">Diciembre</option>
+                    </select>
+                </label>
             </div>
 
             <div class="overflow-x-auto">
@@ -697,6 +717,10 @@
 
         function renderSummary() {
             const tbody = document.getElementById('summaryTableBody');
+            const mesFilter = document.getElementById('summaryMesFilter')?.value || 'Todos';
+            const jornadasFiltradas = mesFilter === 'Todos'
+                ? appState.jornadas
+                : appState.jornadas.filter(j => j.mes === mesFilter);
             const summaryMap = {};
             appState.workers.forEach(w => {
                 summaryMap[w.name] = {
@@ -708,7 +732,7 @@
                 };
             });
 
-            appState.jornadas.forEach(j => {
+            jornadasFiltradas.forEach(j => {
                 if (!summaryMap[j.workerName]) {
                     summaryMap[j.workerName] = {
                         name: j.workerName,
