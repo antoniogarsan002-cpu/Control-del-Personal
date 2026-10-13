@@ -385,6 +385,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         let editingJornadaId = null;
+        let summaryCache = {};
 
         let appState = {
             workers: [
@@ -636,6 +637,7 @@
             updateCalendarWorkerDropdown();
             renderCalendar();
             renderHistory();
+            rebuildSummaryCache();
             renderSummary();
         }
 
@@ -715,39 +717,51 @@
             `).join('');
         }
 
+        function createSummaryEntry(name, type) {
+            return {
+                name,
+                type,
+                totalNorm: 0,
+                totalExtra: 0,
+                totalBruto: 0
+            };
+        }
+
+        function createEmptySummaryBucket() {
+            const bucket = {};
+            appState.workers.forEach(w => {
+                bucket[w.name] = createSummaryEntry(w.name, w.type);
+            });
+            return bucket;
+        }
+
+        function rebuildSummaryCache() {
+            summaryCache = { Todos: createEmptySummaryBucket() };
+
+            appState.jornadas.forEach(j => {
+                const bucketNames = ['Todos', j.mes];
+                bucketNames.forEach(bucketName => {
+                    if (!summaryCache[bucketName]) {
+                        summaryCache[bucketName] = createEmptySummaryBucket();
+                    }
+
+                    if (!summaryCache[bucketName][j.workerName]) {
+                        summaryCache[bucketName][j.workerName] = createSummaryEntry(j.workerName, j.workerType);
+                    }
+
+                    summaryCache[bucketName][j.workerName].totalNorm += Number(j.hNormales) || 0;
+                    summaryCache[bucketName][j.workerName].totalExtra += Number(j.hExtras) || 0;
+                    summaryCache[bucketName][j.workerName].totalBruto += Number(j.totalBruto) || 0;
+                });
+            });
+        }
+
         function renderSummary() {
             const tbody = document.getElementById('summaryTableBody');
             const mesFilter = document.getElementById('summaryMesFilter')?.value || 'Todos';
-            const jornadasFiltradas = mesFilter === 'Todos'
-                ? appState.jornadas
-                : appState.jornadas.filter(j => j.mes === mesFilter);
-            const summaryMap = {};
-            appState.workers.forEach(w => {
-                summaryMap[w.name] = {
-                    name: w.name,
-                    type: w.type,
-                    totalNorm: 0,
-                    totalExtra: 0,
-                    totalBruto: 0
-                };
-            });
+            if (!summaryCache.Todos) rebuildSummaryCache();
 
-            jornadasFiltradas.forEach(j => {
-                if (!summaryMap[j.workerName]) {
-                    summaryMap[j.workerName] = {
-                        name: j.workerName,
-                        type: j.workerType,
-                        totalNorm: 0,
-                        totalExtra: 0,
-                        totalBruto: 0
-                    };
-                }
-                summaryMap[j.workerName].totalNorm += j.hNormales;
-                summaryMap[j.workerName].totalExtra += j.hExtras;
-                summaryMap[j.workerName].totalBruto += parseFloat(j.totalBruto) || 0;
-            });
-
-            const summaryList = Object.values(summaryMap);
+            const summaryList = Object.values(summaryCache[mesFilter] || createEmptySummaryBucket());
             if (summaryList.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-xs text-slate-400 italic">Sin datos para resumir.</td></tr>`;
                 return;
