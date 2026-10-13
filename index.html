@@ -203,6 +203,7 @@
             </div>
 
             <!-- TABLA PRINCIPAL LECTURA POWER BI DIRECTA -->
+            <p class="text-[11px] text-slate-500 mb-3">Pulsa el icono de lápiz junto al ID para editar un registro. El ID se conserva al guardar los cambios.</p>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 text-xs" id="tablaPowerBI">
                     <thead class="bg-slate-50">
@@ -625,7 +626,19 @@
             // Inyecta TODOS los registros de Firebase manteniendo las 16 columnas exactas para Power BI
             tbody.innerHTML = appState.jornadas.map(j => `
                 <tr class="hover:bg-slate-50 transition-colors">
-                    <td>${j.id}</td>
+                    <td class="whitespace-nowrap">
+                        <span>${escapeHtml(j.id)}</span>
+                        <button
+                            type="button"
+                            data-id="${escapeHtml(j.id)}"
+                            onclick="editJornada(this.dataset.id)"
+                            title="Editar registro ${escapeHtml(j.id)}"
+                            aria-label="Editar registro ${escapeHtml(j.id)}"
+                            class="ml-2 inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+                        >
+                            <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                        </button>
+                    </td>
                     <td>${escapeHtml(j.mes)}</td>
                     <td>${j.day}</td>
                     <td>${escapeHtml(j.workerName)}</td>
