@@ -203,7 +203,7 @@
             </div>
 
             <!-- TABLA PRINCIPAL LECTURA POWER BI DIRECTA -->
-            <p class="text-[11px] text-slate-500 mb-3">Pulsa el icono de lápiz junto al ID para editar un registro. El ID se conserva al guardar los cambios.</p>
+            <p class="text-[11px] text-slate-500 mb-3">Pulsa el lápiz para editar o la papelera para borrar un registro. El ID se conserva al guardar los cambios.</p>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 text-xs" id="tablaPowerBI">
                     <thead class="bg-slate-50">
@@ -578,10 +578,18 @@
             filterWorkersDropdown();
         }
 
-        window.deleteJornada = function(id) {
+        window.deleteJornada = async function(id) {
             if (!confirm("¿Deseas eliminar este registro del dataset?")) return;
+            const previousJornadas = appState.jornadas.map(j => ({ ...j }));
             appState.jornadas = appState.jornadas.filter(j => j.id !== id);
-            saveData();
+            const saved = await saveData();
+            if (!saved) {
+                appState.jornadas = previousJornadas;
+                refreshUI();
+                return;
+            }
+            if (editingJornadaId === id) cancelEditJornada();
+            alert("¡Registro eliminado correctamente de la nube!");
         }
 
         function refreshUI() {
@@ -637,6 +645,16 @@
                             class="ml-2 inline-flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
                         >
                             <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                        </button>
+                        <button
+                            type="button"
+                            data-id="${escapeHtml(j.id)}"
+                            onclick="deleteJornada(this.dataset.id)"
+                            title="Borrar registro ${escapeHtml(j.id)}"
+                            aria-label="Borrar registro ${escapeHtml(j.id)}"
+                            class="ml-1 inline-flex h-6 w-6 items-center justify-center rounded-md bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 transition"
+                        >
+                            <i class="fa-solid fa-trash text-[10px]"></i>
                         </button>
                     </td>
                     <td>${escapeHtml(j.mes)}</td>
