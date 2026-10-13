@@ -782,6 +782,10 @@
             `).join('');
         }
 
+        // El selector del resumen usa un evento inline desde el HTML.
+        // Al ser un módulo, la función debe exponerse explícitamente en window.
+        window.renderSummary = renderSummary;
+
         window.exportCSV = function() {
             if (appState.jornadas.length === 0) {
                 alert("No hay registros en el dataset para exportar.");
