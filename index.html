@@ -209,10 +209,10 @@
             </div>
 
             <!-- TABLA PRINCIPAL LECTURA POWER BI DIRECTA -->
-            <p class="text-[11px] text-slate-500 mb-3">Pulsa el lápiz para editar o la papelera para borrar un registro. El ID se conserva al guardar los cambios. El historial se desplaza dentro de este panel para mantener el calendario visible.</p>
-            <div class="max-h-[720px] overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
+            <p class="text-[11px] text-slate-500 mb-3">Pulsa el lápiz para editar o la papelera para borrar un registro. El ID se conserva al guardar los cambios. Se muestran 25 registros por página.</p>
+            <div class="overflow-x-auto rounded-lg border border-slate-100">
                 <table class="min-w-full divide-y divide-slate-200 text-xs" id="tablaPowerBI">
-                    <thead class="bg-slate-50 sticky top-0 z-10">
+                    <thead class="bg-slate-50">
                         <tr>
                             <th>IDRegistro</th>
                             <th>Mes</th>
@@ -276,6 +276,7 @@
                     </tbody>
                 </table>
             </div>
+            <div id="historyPagination" class="flex flex-wrap items-center justify-center gap-1 mt-4"></div>
         </div>
 
         <!-- SECCIÓN 4: CALENDARIO VISUAL DE DÍAS TRABAJADOS -->
@@ -391,6 +392,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         let editingJornadaId = null;
+        let historyCurrentPage = 1;
+        const historyPageSize = 25;
         let summaryCache = {};
 
         let appState = {
@@ -696,14 +699,25 @@
 
         function renderHistory() {
             const tbody = document.getElementById('historyTableBody');
-            if (appState.jornadas.length === 0) {
+            const totalRecords = appState.jornadas.length;
+            const totalPages = Math.max(1, Math.ceil(totalRecords / historyPageSize));
+            historyCurrentPage = Math.min(Math.max(historyCurrentPage, 1), totalPages);
+
+            if (totalRecords === 0) {
                 tbody.innerHTML = `<tr><td colspan="17" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aún no hay jornadas registradas. Rellena el formulario arriba.</td></tr>`;
+                renderHistoryPagination(0);
                 return;
             }
 
-            // Inyecta TODOS los registros de Firebase manteniendo las 17 columnas exactas para Power BI
-            tbody.innerHTML = appState.jornadas.map(j => `
-                <tr class="hover:bg-slate-50 transition-colors">
+            const firstVisibleIndex = (historyCurrentPage - 1) * historyPageSize;
+            const lastVisibleIndex = firstVisibleIndex + historyPageSize;
+
+            // Todas las filas permanecen en el HTML para que Power BI lea el dataset completo.
+            // Solo se ocultan visualmente las que no pertenecen a la página seleccionada.
+            tbody.innerHTML = appState.jornadas.map((j, index) => {
+                const isVisible = index >= firstVisibleIndex && index < lastVisibleIndex;
+                return `
+                <tr class="${isVisible ? 'hover:bg-slate-50 transition-colors' : 'hidden'}">
                     <td class="whitespace-nowrap">
                         <span>${escapeHtml(j.id)}</span>
                         <button
@@ -744,7 +758,62 @@
                     <td>${escapeHtml(j.vehiculo)}</td>
                     <td>${j.totalBruto}</td>
                 </tr>
-            `).join('');
+                `;
+            }).join('');
+            renderHistoryPagination(totalRecords);
+        }
+
+        function renderHistoryPagination(totalRecords) {
+            const pagination = document.getElementById('historyPagination');
+            if (!pagination) return;
+
+            const totalPages = Math.ceil(totalRecords / historyPageSize);
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            const button = (label, page, active = false, disabled = false, ariaLabel = label) => `
+                <button
+                    type="button"
+                    ${disabled ? 'disabled' : `onclick="goToHistoryPage(${page})"`}
+                    aria-label="${ariaLabel}"
+                    class="min-w-9 h-9 px-2 border border-slate-300 text-xs font-medium ${active ? 'bg-slate-200 text-slate-900' : 'bg-white text-slate-700 hover:bg-slate-50'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}"
+                >${label}</button>
+            `;
+
+            const pageButtons = [];
+            const startPage = Math.max(1, historyCurrentPage - 2);
+            const endPage = Math.min(totalPages, historyCurrentPage + 2);
+
+            if (startPage > 1) {
+                pageButtons.push(button('1', 1, historyCurrentPage === 1));
+                if (startPage > 2) pageButtons.push('<span class="px-2 text-slate-500">...</span>');
+            }
+
+            for (let page = startPage; page <= endPage; page++) {
+                pageButtons.push(button(String(page), page, page === historyCurrentPage));
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) pageButtons.push('<span class="px-2 text-slate-500">...</span>');
+                pageButtons.push(button(String(totalPages), totalPages, historyCurrentPage === totalPages));
+            }
+
+            pagination.innerHTML = [
+                button('«', 1, false, historyCurrentPage === 1, 'Primera página'),
+                button('‹', historyCurrentPage - 1, false, historyCurrentPage === 1, 'Página anterior'),
+                ...pageButtons,
+                button('›', historyCurrentPage + 1, false, historyCurrentPage === totalPages, 'Página siguiente'),
+                button('»', totalPages, false, historyCurrentPage === totalPages, 'Última página')
+            ].join('');
+        }
+
+        window.goToHistoryPage = function(page) {
+            const totalPages = Math.max(1, Math.ceil(appState.jornadas.length / historyPageSize));
+            if (page < 1 || page > totalPages || page === historyCurrentPage) return;
+            historyCurrentPage = page;
+            renderHistory();
         }
 
         function createSummaryEntry(name, type) {
