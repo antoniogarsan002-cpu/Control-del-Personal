@@ -286,6 +286,12 @@
                     <h2 class="font-bold text-slate-900 text-sm sm:text-base">Calendario de Días Trabajados</h2>
                 </div>
                 <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-1 text-[11px] font-semibold text-slate-600">
+                        Año:
+                        <select id="calYearFilter" onchange="renderCalendar()" class="text-xs rounded-lg border border-slate-300 px-2.5 py-1.5 bg-white font-medium">
+                            <option value="2026" selected>2026</option>
+                        </select>
+                    </label>
                     <select id="calMesFilter" onchange="renderCalendar()" class="text-xs rounded-lg border border-slate-300 px-2.5 py-1.5 bg-white font-medium">
                         <option value="Enero">Enero</option>
                         <option value="Febrero">Febrero</option>
@@ -480,18 +486,41 @@
             if (currentVal) selectEl.value = currentVal;
         }
 
+        window.updateCalendarYearDropdown = function() {
+            const selectEl = document.getElementById('calYearFilter');
+            if (!selectEl) return;
+
+            const currentVal = selectEl.value || '2026';
+            const years = [...new Set([
+                2026,
+                ...appState.jornadas
+                    .map(j => Number(j.year))
+                    .filter(year => Number.isInteger(year) && year >= 2000 && year <= 2100)
+            ])].sort((a, b) => b - a);
+
+            selectEl.innerHTML = years.map(year => `<option value="${year}">${year}</option>`).join('');
+            selectEl.value = years.includes(Number(currentVal)) ? currentVal : String(years[0] || 2026);
+        }
+
         window.renderCalendar = function() {
             const grid = document.getElementById('calendarGrid');
             const mesSel = document.getElementById('calMesFilter').value;
+            const yearSel = Number(document.getElementById('calYearFilter')?.value || 2026);
             const workerSel = document.getElementById('calWorkerFilter').value;
             if (!grid) return;
 
+            const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const monthIndex = meses.indexOf(mesSel);
+            const daysInMonth = new Date(yearSel, monthIndex + 1, 0).getDate();
+            const firstDay = new Date(yearSel, monthIndex, 1).getDay();
+            const mondayOffset = (firstDay + 6) % 7;
+
             const diasTrabajados = appState.jornadas
-                .filter(j => j.mes === mesSel && j.workerName === workerSel)
+                .filter(j => j.mes === mesSel && Number(j.year) === yearSel && j.workerName === workerSel)
                 .map(j => Number(j.day));
 
-            let html = '';
-            for (let day = 1; day <= 31; day++) {
+            let html = '<div class="h-9"></div>'.repeat(mondayOffset);
+            for (let day = 1; day <= daysInMonth; day++) {
                 const isWorked = diasTrabajados.includes(day);
                 html += `
                     <div class="h-9 rounded-lg flex items-center justify-center text-xs font-bold transition-all ${
@@ -635,6 +664,7 @@
             renderWorkers();
             filterWorkersDropdown();
             updateCalendarWorkerDropdown();
+            updateCalendarYearDropdown();
             renderCalendar();
             renderHistory();
             rebuildSummaryCache();
