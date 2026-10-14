@@ -711,10 +711,18 @@
 
             const firstVisibleIndex = (historyCurrentPage - 1) * historyPageSize;
             const lastVisibleIndex = firstVisibleIndex + historyPageSize;
+            const mesesOrdenados = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            const fechaOrden = jornada => {
+                const year = Number(jornada.year) || 0;
+                const month = mesesOrdenados.indexOf(jornada.mes) + 1;
+                const day = Number(jornada.day) || 0;
+                return year * 10000 + month * 100 + day;
+            };
+            const jornadasOrdenadas = [...appState.jornadas].sort((a, b) => fechaOrden(b) - fechaOrden(a));
 
             // Todas las filas permanecen en el HTML para que Power BI lea el dataset completo.
             // Solo se ocultan visualmente las que no pertenecen a la página seleccionada.
-            tbody.innerHTML = appState.jornadas.map((j, index) => {
+            tbody.innerHTML = jornadasOrdenadas.map((j, index) => {
                 const isVisible = index >= firstVisibleIndex && index < lastVisibleIndex;
                 return `
                 <tr class="${isVisible ? 'hover:bg-slate-50 transition-colors' : 'hidden'}">
