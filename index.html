@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS para exportar archivos Excel reales (.xlsx) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
 
@@ -65,12 +67,15 @@
             <h1 class="font-bold text-base sm:text-lg tracking-tight flex items-center gap-2">
                 Control de Personal (Analista & Campo)
             </h1>
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center flex-wrap justify-end gap-2">
                 <span id="syncBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-sm">
                     <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Conectado
                 </span>
                 <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5">
                     <i class="fa-solid fa-file-csv"></i> Exportar CSV
+                </button>
+                <button onclick="exportExcel()" class="bg-[#8b633d] hover:bg-[#704c2f] text-white font-medium text-xs px-3 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-excel"></i> Exportar Excel
                 </button>
             </div>
         </div>
@@ -1065,6 +1070,58 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+        }
+
+        window.exportExcel = function() {
+            if (appState.jornadas.length === 0) {
+                alert("No hay registros en el dataset para exportar.");
+                return;
+            }
+
+            if (!window.XLSX) {
+                alert("No se ha podido cargar el exportador de Excel. Comprueba tu conexión y vuelve a intentarlo.");
+                return;
+            }
+
+            const headers = [
+                'IDRegistro', 'Mes', 'Año', 'Dia', 'Trabajador', 'TipoPersonal',
+                'HorasNormales', 'PrecioNormal', 'HorasExtras', 'PrecioExtra',
+                'Besana', 'Faena', 'Gasoil', 'CocheTractorCant', 'PrecioVehiculo',
+                'Vehiculo', 'TotalBruto'
+            ];
+
+            const rows = appState.jornadas.map(j => [
+                j.id,
+                j.mes,
+                j.year == null ? '' : Number(j.year),
+                Number(j.day) || 0,
+                j.workerName,
+                j.workerType,
+                Number(j.hNormales) || 0,
+                Number(j.precioNormal) || 0,
+                Number(j.hExtras) || 0,
+                Number(j.precioExtra) || 0,
+                Number(j.besana) || 0,
+                Number(j.faena) || 0,
+                Number(j.gasoil) || 0,
+                Number(j.coche) || 0,
+                Number(j.precioVehiculo) || 0,
+                j.vehiculo || '-',
+                Number(j.totalBruto) || 0
+            ]);
+
+            const worksheet = window.XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            worksheet['!autofilter'] = { ref: `A1:Q${rows.length + 1}` };
+            worksheet['!cols'] = [
+                { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 30 },
+                { wch: 15 }, { wch: 16 }, { wch: 15 }, { wch: 14 }, { wch: 14 },
+                { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 18 }, { wch: 17 },
+                { wch: 16 }, { wch: 14 }
+            ];
+
+            const workbook = window.XLSX.utils.book_new();
+            window.XLSX.utils.book_append_sheet(workbook, worksheet, 'Registros');
+            window.XLSX.writeFile(workbook, `dataset_agricola_${new Date().toISOString().slice(0, 10)}.xlsx`);
         }
 
         function escapeHtml(str) {
