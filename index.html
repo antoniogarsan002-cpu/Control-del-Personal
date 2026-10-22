@@ -519,6 +519,7 @@
         const historyPageSize = 25;
         let summaryCache = {};
         let hasRestoredLastJornadaForm = false;
+        let jornadaFormHasUnsavedChanges = false;
         const lastJornadaFormStorageKey = 'controlPersonal.ultimoRegistroForm';
 
         let appState = {
@@ -702,22 +703,17 @@
         }
 
         function restoreLastJornadaForm({ keepEditing = true } = {}) {
-            let jornada;
-            try {
-                jornada = JSON.parse(localStorage.getItem(lastJornadaFormStorageKey) || 'null');
-            } catch (error) {
-                jornada = null;
-            }
-
-            const savedRecordStillExists = jornada?.id
-                ? appState.jornadas.some(j => j.id === jornada.id)
-                : false;
-            if (!jornada || (jornada.id && !savedRecordStillExists)) {
-                jornada = appState.jornadas[appState.jornadas.length - 1] || null;
-                if (jornada) saveLastJornadaForm(jornada);
+            let jornada = appState.jornadas[appState.jornadas.length - 1] || null;
+            if (!jornada) {
+                try {
+                    jornada = JSON.parse(localStorage.getItem(lastJornadaFormStorageKey) || 'null');
+                } catch (error) {
+                    jornada = null;
+                }
             }
 
             if (!jornada) return false;
+            saveLastJornadaForm(jornada);
 
             const setValue = (id, value) => {
                 const element = document.getElementById(id);
@@ -742,6 +738,7 @@
             document.getElementById('jTypeFilter').value = 'Todos';
             filterWorkersDropdown();
             setValue('jWorkerSelect', jornada.workerName);
+            jornadaFormHasUnsavedChanges = false;
 
             const canEditSavedRecord = jornada.id && appState.jornadas.some(j => j.id === jornada.id);
             if (keepEditing && canEditSavedRecord) {
@@ -826,6 +823,7 @@
 
             // Conserva el último registro en el formulario para poder revisarlo o modificarlo.
             saveLastJornadaForm(nuevoRegistro);
+            jornadaFormHasUnsavedChanges = false;
             editJornada(nuevoRegistro.id);
             alert(wasEditing ? "¡Registro actualizado correctamente en la nube!" : "¡Registro guardado correctamente en la nube!");
         }
@@ -856,6 +854,7 @@
 
             document.getElementById('jornadaSubmitBtn').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Actualizar Registro';
             document.getElementById('cancelEditBtn').classList.remove('hidden');
+            jornadaFormHasUnsavedChanges = false;
             document.getElementById('jornadaForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
@@ -892,6 +891,14 @@
             rebuildSummaryCache();
             renderSummary();
         }
+
+        const jornadaForm = document.getElementById('jornadaForm');
+        jornadaForm?.addEventListener('input', () => {
+            jornadaFormHasUnsavedChanges = true;
+        });
+        jornadaForm?.addEventListener('change', () => {
+            jornadaFormHasUnsavedChanges = true;
+        });
 
         function renderWorkers() {
             const tbody = document.getElementById('workersTableBody');
@@ -1228,16 +1235,20 @@
                 appState = docSnap.data();
                 refreshUI();
                 if (!hasRestoredLastJornadaForm) {
-                    restoreLastJornadaForm();
+                    restoreLastJornadaForm({ keepEditing: false });
                     hasRestoredLastJornadaForm = true;
+                } else if (!editingJornadaId && !jornadaFormHasUnsavedChanges) {
+                    restoreLastJornadaForm({ keepEditing: false });
                 }
                 markPowerBIReady();
             } else {
                 await setDoc(docRef, appState);
                 refreshUI();
                 if (!hasRestoredLastJornadaForm) {
-                    restoreLastJornadaForm();
+                    restoreLastJornadaForm({ keepEditing: false });
                     hasRestoredLastJornadaForm = true;
+                } else if (!editingJornadaId && !jornadaFormHasUnsavedChanges) {
+                    restoreLastJornadaForm({ keepEditing: false });
                 }
                 markPowerBIReady();
             }
