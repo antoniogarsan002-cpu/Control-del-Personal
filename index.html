@@ -779,7 +779,12 @@
             setValue('jPrecioVehiculo', jornada.precioVehiculo);
             setValue('jVehiculo', jornada.vehiculo === '-' ? '' : jornada.vehiculo);
 
-            document.getElementById('jTypeFilter').value = 'Todos';
+            const tipoAnterior = jornada.workerType === 'Eventual'
+                ? 'Trabajador Eventual'
+                : jornada.workerType === 'Fijo'
+                    ? 'Fijo'
+                    : 'Todos';
+            document.getElementById('jTypeFilter').value = tipoAnterior;
             filterWorkersDropdown();
             setValue('jWorkerSelect', jornada.workerName);
             jornadaFormHasUnsavedChanges = false;
@@ -885,7 +890,11 @@
             document.getElementById('jYear').value = Number.isInteger(jornadaYear) ? jornadaYear : new Date().getFullYear();
             document.getElementById('jDay').value = jornada.day;
             document.getElementById('jCampana').value = jornada.campana || '';
-            document.getElementById('jTypeFilter').value = 'Todos';
+            document.getElementById('jTypeFilter').value = jornada.workerType === 'Eventual'
+                ? 'Trabajador Eventual'
+                : jornada.workerType === 'Fijo'
+                    ? 'Fijo'
+                    : 'Todos';
             filterWorkersDropdown();
             document.getElementById('jWorkerSelect').value = jornada.workerName;
             document.getElementById('jHNormales').value = jornada.hNormales;
