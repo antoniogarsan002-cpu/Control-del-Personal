@@ -263,7 +263,7 @@
             </div>
 
             <!-- TABLA PRINCIPAL LECTURA POWER BI DIRECTA -->
-            <p class="text-[11px] text-slate-500 mb-3">Pulsa el lápiz para editar o la papelera para borrar un registro. El ID se conserva al guardar los cambios. Se muestran 25 registros por página.</p>
+            <p class="text-[11px] text-slate-500 mb-3">Pulsa el lápiz para editar o la papelera para borrar un registro. El ID se conserva al guardar los cambios. Se muestran todos los registros.</p>
             <div class="flex flex-wrap items-end gap-2 mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <label class="flex flex-col gap-1 text-[11px] font-semibold text-slate-600">
                     Mes
@@ -500,7 +500,7 @@
     <!-- FIREBASE Y LÓGICA DE DATOS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD0z_EapsDSxwMBWdixJcfut9KO7krE4Rc",
@@ -516,7 +516,7 @@
         const db = getFirestore(app);
         let editingJornadaId = null;
         let historyCurrentPage = 1;
-        const historyPageSize = 25;
+        const historyPageSize = Number.MAX_SAFE_INTEGER;
         let summaryCache = {};
         let hasRestoredLastJornadaForm = false;
         let jornadaFormHasUnsavedChanges = false;
@@ -551,6 +551,50 @@
                 return true;
             } catch (error) {
                 console.error("Error al guardar en Firebase: ", error);
+                document.getElementById('syncBadge').className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white shadow-sm";
+                document.getElementById('syncBadge').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-[8px]"></i> Error al sincronizar';
+                refreshUI();
+                return false;
+            }
+        }
+
+        async function saveJornadaToFirestore(jornada, wasEditing) {
+            try {
+                const savedState = await runTransaction(db, async transaction => {
+                    const snapshot = await transaction.get(docRef);
+                    const latestState = snapshot.exists() ? snapshot.data() : appState;
+                    const latestJornadas = Array.isArray(latestState.jornadas)
+                        ? latestState.jornadas.map(j => ({ ...j }))
+                        : [];
+                    const jornadaIndex = latestJornadas.findIndex(j => j.id === jornada.id);
+
+                    if (wasEditing && jornadaIndex !== -1) {
+                        latestJornadas[jornadaIndex] = jornada;
+                    } else if (jornadaIndex === -1) {
+                        latestJornadas.push(jornada);
+                    } else {
+                        latestJornadas.push({
+                            ...jornada,
+                            id: 'j_' + Math.random().toString(36).substring(2, 9)
+                        });
+                    }
+
+                    const nextState = {
+                        ...latestState,
+                        workers: Array.isArray(latestState.workers) ? latestState.workers : appState.workers,
+                        jornadas: latestJornadas
+                    };
+                    transaction.set(docRef, nextState);
+                    return nextState;
+                });
+
+                appState = savedState;
+                document.getElementById('syncBadge').className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-sm";
+                document.getElementById('syncBadge').innerHTML = '<i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Conectado';
+                refreshUI();
+                return true;
+            } catch (error) {
+                console.error("Error al guardar la jornada en Firebase: ", error);
                 document.getElementById('syncBadge').className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white shadow-sm";
                 document.getElementById('syncBadge').innerHTML = '<i class="fa-solid fa-triangle-exclamation text-[8px]"></i> Error al sincronizar';
                 refreshUI();
@@ -814,7 +858,7 @@
                 appState.jornadas.push(nuevoRegistro);
             }
 
-            const saved = await saveData();
+            const saved = await saveJornadaToFirestore(nuevoRegistro, wasEditing);
             if (!saved) {
                 appState.jornadas = previousJornadas;
                 refreshUI();
@@ -869,11 +913,33 @@
             restoreLastJornadaForm({ keepEditing: false });
         }
 
+        async function deleteJornadaFromFirestore(id) {
+            try {
+                const savedState = await runTransaction(db, async transaction => {
+                    const snapshot = await transaction.get(docRef);
+                    const latestState = snapshot.exists() ? snapshot.data() : appState;
+                    const latestJornadas = Array.isArray(latestState.jornadas)
+                        ? latestState.jornadas.filter(j => j.id !== id)
+                        : [];
+                    const nextState = { ...latestState, jornadas: latestJornadas };
+                    transaction.set(docRef, nextState);
+                    return nextState;
+                });
+
+                appState = savedState;
+                refreshUI();
+                return true;
+            } catch (error) {
+                console.error("Error al borrar la jornada en Firebase: ", error);
+                return false;
+            }
+        }
+
         window.deleteJornada = async function(id) {
             if (!confirm("¿Deseas eliminar este registro del dataset?")) return;
             const previousJornadas = appState.jornadas.map(j => ({ ...j }));
             appState.jornadas = appState.jornadas.filter(j => j.id !== id);
-            const saved = await saveData();
+            const saved = await deleteJornadaFromFirestore(id);
             if (!saved) {
                 appState.jornadas = previousJornadas;
                 refreshUI();
@@ -949,7 +1015,7 @@
             historyCurrentPage = Math.min(Math.max(historyCurrentPage, 1), totalPages);
 
             if (jornadasOrdenadas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="17" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aún no hay jornadas registradas. Rellena el formulario arriba.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="18" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aún no hay jornadas registradas. Rellena el formulario arriba.</td></tr>`;
                 renderHistoryPagination(0);
                 return;
             }
