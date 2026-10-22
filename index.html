@@ -762,7 +762,8 @@
                 return;
             }
 
-            cancelEditJornada();
+            // Conserva el último registro en el formulario para poder revisarlo o modificarlo.
+            editJornada(nuevoRegistro.id);
             alert(wasEditing ? "¡Registro actualizado correctamente en la nube!" : "¡Registro guardado correctamente en la nube!");
         }
 
