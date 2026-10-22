@@ -746,19 +746,7 @@
             }
         }
 
-        function restoreLastJornadaForm({ keepEditing = true } = {}) {
-            let jornada = appState.jornadas[appState.jornadas.length - 1] || null;
-            if (!jornada) {
-                try {
-                    jornada = JSON.parse(localStorage.getItem(lastJornadaFormStorageKey) || 'null');
-                } catch (error) {
-                    jornada = null;
-                }
-            }
-
-            if (!jornada) return false;
-            saveLastJornadaForm(jornada);
-
+        function populateJornadaForm(jornada) {
             const setValue = (id, value) => {
                 const element = document.getElementById(id);
                 if (element && value !== undefined && value !== null) element.value = value;
@@ -784,10 +772,25 @@
                 : jornada.workerType === 'Fijo'
                     ? 'Fijo'
                     : 'Todos';
-            document.getElementById('jTypeFilter').value = tipoAnterior;
+            setValue('jTypeFilter', tipoAnterior);
             filterWorkersDropdown();
             setValue('jWorkerSelect', jornada.workerName);
             jornadaFormHasUnsavedChanges = false;
+        }
+
+        function restoreLastJornadaForm({ keepEditing = true } = {}) {
+            let jornada = appState.jornadas[appState.jornadas.length - 1] || null;
+            if (!jornada) {
+                try {
+                    jornada = JSON.parse(localStorage.getItem(lastJornadaFormStorageKey) || 'null');
+                } catch (error) {
+                    jornada = null;
+                }
+            }
+
+            if (!jornada) return false;
+            saveLastJornadaForm(jornada);
+            populateJornadaForm(jornada);
 
             const canEditSavedRecord = jornada.id && appState.jornadas.some(j => j.id === jornada.id);
             if (keepEditing && canEditSavedRecord) {
@@ -873,6 +876,7 @@
             // Conserva los valores del último registro, pero deja el formulario listo
             // para crear un registro nuevo. Para modificar uno existente se usa el lápiz.
             saveLastJornadaForm(nuevoRegistro);
+            populateJornadaForm(nuevoRegistro);
             editingJornadaId = null;
             jornadaFormHasUnsavedChanges = false;
             document.getElementById('jornadaSubmitBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Registro';
@@ -885,28 +889,7 @@
             if (!jornada) return;
 
             editingJornadaId = id;
-            document.getElementById('jMes').value = jornada.mes;
-            const jornadaYear = Number(jornada.year);
-            document.getElementById('jYear').value = Number.isInteger(jornadaYear) ? jornadaYear : new Date().getFullYear();
-            document.getElementById('jDay').value = jornada.day;
-            document.getElementById('jCampana').value = jornada.campana || '';
-            document.getElementById('jTypeFilter').value = jornada.workerType === 'Eventual'
-                ? 'Trabajador Eventual'
-                : jornada.workerType === 'Fijo'
-                    ? 'Fijo'
-                    : 'Todos';
-            filterWorkersDropdown();
-            document.getElementById('jWorkerSelect').value = jornada.workerName;
-            document.getElementById('jHNormales').value = jornada.hNormales;
-            document.getElementById('jPrecioNormal').value = jornada.precioNormal;
-            document.getElementById('jHExtras').value = jornada.hExtras;
-            document.getElementById('jPrecioExtra').value = jornada.precioExtra;
-            document.getElementById('jBesana').value = jornada.besana;
-            document.getElementById('jFaena').value = jornada.faena;
-            document.getElementById('jGasoil').value = jornada.gasoil;
-            document.getElementById('jCoche').value = jornada.coche;
-            document.getElementById('jPrecioVehiculo').value = jornada.precioVehiculo;
-            document.getElementById('jVehiculo').value = jornada.vehiculo === '-' ? '' : jornada.vehiculo;
+            populateJornadaForm(jornada);
 
             document.getElementById('jornadaSubmitBtn').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Actualizar Registro';
             document.getElementById('cancelEditBtn').classList.remove('hidden');
