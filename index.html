@@ -518,6 +518,8 @@
         let historyCurrentPage = 1;
         const historyPageSize = 25;
         let summaryCache = {};
+        let hasRestoredLastJornadaForm = false;
+        const lastJornadaFormStorageKey = 'controlPersonal.ultimoRegistroForm';
 
         let appState = {
             workers: [
@@ -691,6 +693,66 @@
             grid.innerHTML = html;
         }
 
+        function saveLastJornadaForm(jornada) {
+            try {
+                localStorage.setItem(lastJornadaFormStorageKey, JSON.stringify(jornada));
+            } catch (error) {
+                console.warn('No se pudieron conservar los últimos valores del formulario:', error);
+            }
+        }
+
+        function restoreLastJornadaForm({ keepEditing = true } = {}) {
+            let jornada;
+            try {
+                jornada = JSON.parse(localStorage.getItem(lastJornadaFormStorageKey) || 'null');
+            } catch (error) {
+                jornada = null;
+            }
+
+            const savedRecordStillExists = jornada?.id
+                ? appState.jornadas.some(j => j.id === jornada.id)
+                : false;
+            if (!jornada || (jornada.id && !savedRecordStillExists)) {
+                jornada = appState.jornadas[appState.jornadas.length - 1] || null;
+                if (jornada) saveLastJornadaForm(jornada);
+            }
+
+            if (!jornada) return false;
+
+            const setValue = (id, value) => {
+                const element = document.getElementById(id);
+                if (element && value !== undefined && value !== null) element.value = value;
+            };
+
+            setValue('jMes', jornada.mes);
+            setValue('jYear', jornada.year);
+            setValue('jDay', jornada.day);
+            setValue('jCampana', jornada.campana || '');
+            setValue('jHNormales', jornada.hNormales);
+            setValue('jPrecioNormal', jornada.precioNormal);
+            setValue('jHExtras', jornada.hExtras);
+            setValue('jPrecioExtra', jornada.precioExtra);
+            setValue('jBesana', jornada.besana);
+            setValue('jFaena', jornada.faena);
+            setValue('jGasoil', jornada.gasoil);
+            setValue('jCoche', jornada.coche);
+            setValue('jPrecioVehiculo', jornada.precioVehiculo);
+            setValue('jVehiculo', jornada.vehiculo === '-' ? '' : jornada.vehiculo);
+
+            document.getElementById('jTypeFilter').value = 'Todos';
+            filterWorkersDropdown();
+            setValue('jWorkerSelect', jornada.workerName);
+
+            const canEditSavedRecord = jornada.id && appState.jornadas.some(j => j.id === jornada.id);
+            if (keepEditing && canEditSavedRecord) {
+                editingJornadaId = jornada.id;
+                document.getElementById('jornadaSubmitBtn').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Actualizar Registro';
+                document.getElementById('cancelEditBtn').classList.remove('hidden');
+            }
+
+            return true;
+        }
+
         window.handleAddJornada = async function(e) {
             e.preventDefault();
             const workerSelect = document.getElementById('jWorkerSelect');
@@ -763,6 +825,7 @@
             }
 
             // Conserva el último registro en el formulario para poder revisarlo o modificarlo.
+            saveLastJornadaForm(nuevoRegistro);
             editJornada(nuevoRegistro.id);
             alert(wasEditing ? "¡Registro actualizado correctamente en la nube!" : "¡Registro guardado correctamente en la nube!");
         }
@@ -801,8 +864,7 @@
             document.getElementById('jornadaForm').reset();
             document.getElementById('jornadaSubmitBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Registro';
             document.getElementById('cancelEditBtn').classList.add('hidden');
-            document.getElementById('jTypeFilter').value = 'Todos';
-            filterWorkersDropdown();
+            restoreLastJornadaForm({ keepEditing: false });
         }
 
         window.deleteJornada = async function(id) {
@@ -1165,10 +1227,18 @@
             if (docSnap.exists()) {
                 appState = docSnap.data();
                 refreshUI();
+                if (!hasRestoredLastJornadaForm) {
+                    restoreLastJornadaForm();
+                    hasRestoredLastJornadaForm = true;
+                }
                 markPowerBIReady();
             } else {
                 await setDoc(docRef, appState);
                 refreshUI();
+                if (!hasRestoredLastJornadaForm) {
+                    restoreLastJornadaForm();
+                    hasRestoredLastJornadaForm = true;
+                }
                 markPowerBIReady();
             }
         }, (error) => {
