@@ -767,9 +767,11 @@
             setValue('jPrecioVehiculo', jornada.precioVehiculo);
             setValue('jVehiculo', jornada.vehiculo === '-' ? '' : jornada.vehiculo);
 
-            const tipoAnterior = jornada.workerType === 'Eventual'
+            const workerForJornada = appState.workers.find(worker => worker.name === jornada.workerName);
+            const workerTypeForJornada = jornada.workerType || (workerForJornada && workerForJornada.type);
+            const tipoAnterior = workerTypeForJornada === 'Eventual'
                 ? 'Trabajador Eventual'
-                : jornada.workerType === 'Fijo'
+                : workerTypeForJornada === 'Fijo'
                     ? 'Fijo'
                     : 'Todos';
             setValue('jTypeFilter', tipoAnterior);
