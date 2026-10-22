@@ -821,10 +821,13 @@
                 return;
             }
 
-            // Conserva el último registro en el formulario para poder revisarlo o modificarlo.
+            // Conserva los valores del último registro, pero deja el formulario listo
+            // para crear un registro nuevo. Para modificar uno existente se usa el lápiz.
             saveLastJornadaForm(nuevoRegistro);
+            editingJornadaId = null;
             jornadaFormHasUnsavedChanges = false;
-            editJornada(nuevoRegistro.id);
+            document.getElementById('jornadaSubmitBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Guardar Registro';
+            document.getElementById('cancelEditBtn').classList.add('hidden');
             alert(wasEditing ? "¡Registro actualizado correctamente en la nube!" : "¡Registro guardado correctamente en la nube!");
         }
 
