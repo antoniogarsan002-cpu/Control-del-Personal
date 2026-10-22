@@ -165,6 +165,12 @@
                 </div>
 
                 <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Campaña</label>
+                    <input type="text" id="jCampana" placeholder="Ej: Campaña 2026"
+                        class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
+                </div>
+
+                <div>
                     <label class="block text-[11px] font-semibold text-slate-600 mb-1">1. Tipo de Personal</label>
                     <select id="jTypeFilter" onchange="filterWorkersDropdown()" class="w-full text-xs rounded-lg border border-slate-300 px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
                         <option value="Todos">Todos los tipos</option>
@@ -332,6 +338,7 @@
                             <th>Mes</th>
                             <th>Año</th>
                             <th>Dia</th>
+                            <th>Campaña</th>
                             <th>Trabajador</th>
                             <th>TipoPersonal</th>
                             <th>HorasNormales</th>
@@ -354,6 +361,7 @@
                             <td>Diciembre</td>
                             <td>2026</td>
                             <td>1</td>
+                            <td>Campaña 2026</td>
                             <td>RUIZ ALVAREZ IGNACIO</td>
                             <td>Fijo</td>
                             <td>21</td>
@@ -373,6 +381,7 @@
                             <td>Diciembre</td>
                             <td>2026</td>
                             <td>2</td>
+                            <td>Campaña 2026</td>
                             <td>RUIZ ALVAREZ IGNACIO</td>
                             <td>Fijo</td>
                             <td>45</td>
@@ -718,6 +727,7 @@
                 mes: document.getElementById('jMes').value,
                 year: year,
                 day: parseInt(document.getElementById('jDay').value) || 1,
+                campana: document.getElementById('jCampana').value.trim(),
                 workerId: workerId,
                 workerName: workerName,
                 workerType: workerType,
@@ -765,6 +775,7 @@
             const jornadaYear = Number(jornada.year);
             document.getElementById('jYear').value = Number.isInteger(jornadaYear) ? jornadaYear : new Date().getFullYear();
             document.getElementById('jDay').value = jornada.day;
+            document.getElementById('jCampana').value = jornada.campana || '';
             document.getElementById('jTypeFilter').value = 'Todos';
             filterWorkersDropdown();
             document.getElementById('jWorkerSelect').value = jornada.workerName;
@@ -906,6 +917,7 @@
                     <td>${escapeHtml(j.mes)}</td>
                     <td>${j.year ?? ''}</td>
                     <td>${j.day}</td>
+                    <td>${escapeHtml(j.campana || '-')}</td>
                     <td>${escapeHtml(j.workerName)}</td>
                     <td>${escapeHtml(j.workerType)}</td>
                     <td>${j.hNormales}</td>
@@ -923,7 +935,7 @@
                 `;
             }).join('');
             const mensajeSinResultados = totalRecords === 0
-                ? `<tr><td colspan="17" class="px-4 py-8 text-center text-xs text-slate-400 italic">No hay registros que coincidan con los filtros seleccionados.</td></tr>`
+                ? `<tr><td colspan="18" class="px-4 py-8 text-center text-xs text-slate-400 italic">No hay registros que coincidan con los filtros seleccionados.</td></tr>`
                 : '';
             tbody.innerHTML = filas + mensajeSinResultados;
             renderHistoryPagination(totalRecords);
@@ -1057,9 +1069,9 @@
                 return;
             }
 
-            let csv = "IDRegistro,Mes,Año,Dia,Trabajador,TipoPersonal,HorasNormales,PrecioNormal,HorasExtras,PrecioExtra,Besana,Faena,Gasoil,CocheTractorCant,PrecioVehiculo,Vehiculo,TotalBruto\r\n";
+            let csv = "IDRegistro,Mes,Año,Dia,Campaña,Trabajador,TipoPersonal,HorasNormales,PrecioNormal,HorasExtras,PrecioExtra,Besana,Faena,Gasoil,CocheTractorCant,PrecioVehiculo,Vehiculo,TotalBruto\r\n";
             appState.jornadas.forEach(j => {
-                csv += `"${j.id}","${j.mes}",${j.year ?? ''},${j.day},"${j.workerName}","${j.workerType}",${j.hNormales},${j.precioNormal},${j.hExtras},${j.precioExtra},${j.besana},${j.faena},${j.gasoil},${j.coche || 0},${j.precioVehiculo || 0},"${j.vehiculo}",${j.totalBruto}\r\n`;
+                csv += `"${j.id}","${j.mes}",${j.year ?? ''},${j.day},"${j.campana || ''}","${j.workerName}","${j.workerType}",${j.hNormales},${j.precioNormal},${j.hExtras},${j.precioExtra},${j.besana},${j.faena},${j.gasoil},${j.coche || 0},${j.precioVehiculo || 0},"${j.vehiculo}",${j.totalBruto}\r\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1084,7 +1096,7 @@
             }
 
             const headers = [
-                'IDRegistro', 'Mes', 'Año', 'Dia', 'Trabajador', 'TipoPersonal',
+                'IDRegistro', 'Mes', 'Año', 'Dia', 'Campaña', 'Trabajador', 'TipoPersonal',
                 'HorasNormales', 'PrecioNormal', 'HorasExtras', 'PrecioExtra',
                 'Besana', 'Faena', 'Gasoil', 'CocheTractorCant', 'PrecioVehiculo',
                 'Vehiculo', 'TotalBruto'
@@ -1095,6 +1107,7 @@
                 j.mes,
                 j.year == null ? '' : Number(j.year),
                 Number(j.day) || 0,
+                j.campana || '',
                 j.workerName,
                 j.workerType,
                 Number(j.hNormales) || 0,
@@ -1111,9 +1124,9 @@
             ]);
 
             const worksheet = window.XLSX.utils.aoa_to_sheet([headers, ...rows]);
-            worksheet['!autofilter'] = { ref: `A1:Q${rows.length + 1}` };
+            worksheet['!autofilter'] = { ref: `A1:R${rows.length + 1}` };
             worksheet['!cols'] = [
-                { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 30 },
+                { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 18 }, { wch: 30 },
                 { wch: 15 }, { wch: 16 }, { wch: 15 }, { wch: 14 }, { wch: 14 },
                 { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 18 }, { wch: 17 },
                 { wch: 16 }, { wch: 14 }
