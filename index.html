@@ -326,6 +326,18 @@
                         <option value="Todos" selected>Todos los trabajadores</option>
                     </select>
                 </label>
+                <label class="flex flex-col gap-1 text-[11px] font-semibold text-slate-600">
+                    Besana
+                    <select id="historyBesanaFilter" onchange="applyHistoryFilters()" class="text-xs rounded-lg border border-slate-300 px-2.5 py-1.5 bg-white font-medium min-w-28">
+                        <option value="Todos" selected>Todas</option>
+                    </select>
+                </label>
+                <label class="flex flex-col gap-1 text-[11px] font-semibold text-slate-600">
+                    Faena
+                    <select id="historyFaenaFilter" onchange="applyHistoryFilters()" class="text-xs rounded-lg border border-slate-300 px-2.5 py-1.5 bg-white font-medium min-w-28">
+                        <option value="Todos" selected>Todas</option>
+                    </select>
+                </label>
                 <button type="button" onclick="clearHistoryFilters()" class="text-xs rounded-lg bg-slate-600 hover:bg-slate-700 text-white font-medium px-3 py-2 transition shadow-sm">
                     Limpiar filtros
                 </button>
@@ -692,6 +704,29 @@
             selectEl.value = names.includes(currentVal) ? currentVal : 'Todos';
         }
 
+        function updateHistoryNumberDropdown(id, field) {
+            const selectEl = document.getElementById(id);
+            if (!selectEl) return;
+
+            const currentVal = selectEl.value || 'Todos';
+            const values = [...new Set(
+                appState.jornadas
+                    .map(jornada => Number(jornada[field]))
+                    .filter(value => Number.isFinite(value))
+            )].sort((a, b) => a - b);
+
+            selectEl.innerHTML = [
+                '<option value="Todos">Todas</option>',
+                ...values.map(value => `<option value="${value}">${value}</option>`)
+            ].join('');
+            selectEl.value = values.includes(Number(currentVal)) ? currentVal : 'Todos';
+        }
+
+        window.updateHistoryNumberDropdowns = function() {
+            updateHistoryNumberDropdown('historyBesanaFilter', 'besana');
+            updateHistoryNumberDropdown('historyFaenaFilter', 'faena');
+        }
+
         window.applyHistoryFilters = function() {
             historyCurrentPage = 1;
             renderHistory();
@@ -701,6 +736,8 @@
             document.getElementById('historyMesFilter').value = 'Todos';
             document.getElementById('historyDayFilter').value = 'Todos';
             document.getElementById('historyWorkerFilter').value = 'Todos';
+            document.getElementById('historyBesanaFilter').value = 'Todos';
+            document.getElementById('historyFaenaFilter').value = 'Todos';
             historyCurrentPage = 1;
             renderHistory();
         }
@@ -949,6 +986,7 @@
             updateCalendarWorkerDropdown();
             updateCalendarYearDropdown();
             updateHistoryWorkerDropdown();
+            updateHistoryNumberDropdowns();
             renderCalendar();
             renderHistory();
             rebuildSummaryCache();
@@ -992,6 +1030,8 @@
             const mesFilter = document.getElementById('historyMesFilter')?.value || 'Todos';
             const dayFilter = document.getElementById('historyDayFilter')?.value || 'Todos';
             const workerFilter = document.getElementById('historyWorkerFilter')?.value || 'Todos';
+            const besanaFilter = document.getElementById('historyBesanaFilter')?.value || 'Todos';
+            const faenaFilter = document.getElementById('historyFaenaFilter')?.value || 'Todos';
             const fechaOrden = jornada => {
                 const year = Number(jornada.year) || 0;
                 const month = mesesOrdenados.indexOf(jornada.mes) + 1;
@@ -1003,6 +1043,8 @@
                 (mesFilter === 'Todos' || jornada.mes === mesFilter)
                 && (dayFilter === 'Todos' || Number(jornada.day) === Number(dayFilter))
                 && (workerFilter === 'Todos' || jornada.workerName === workerFilter)
+                && (besanaFilter === 'Todos' || Number(jornada.besana) === Number(besanaFilter))
+                && (faenaFilter === 'Todos' || Number(jornada.faena) === Number(faenaFilter))
             );
             const totalRecords = jornadasFiltradas.length;
             const totalPages = Math.max(1, Math.ceil(totalRecords / historyPageSize));
