@@ -263,7 +263,7 @@
             </div>
 
             <!-- TABLA PRINCIPAL LECTURA POWER BI DIRECTA -->
-            <p class="text-[11px] text-slate-500 mb-3">Pulsa el lápiz para editar o la papelera para borrar un registro. El ID se conserva al guardar los cambios. Se muestran todos los registros.</p>
+            <p class="text-[11px] text-slate-500 mb-3">Pulsa el lápiz para editar o la papelera para borrar un registro. El ID se conserva al guardar los cambios. Se muestran 25 registros por página.</p>
             <div class="flex flex-wrap items-end gap-2 mb-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <label class="flex flex-col gap-1 text-[11px] font-semibold text-slate-600">
                     Mes
@@ -516,7 +516,7 @@
         const db = getFirestore(app);
         let editingJornadaId = null;
         let historyCurrentPage = 1;
-        const historyPageSize = Number.MAX_SAFE_INTEGER;
+        const historyPageSize = 25;
         let summaryCache = {};
         let hasRestoredLastJornadaForm = false;
         let jornadaFormHasUnsavedChanges = false;
