@@ -244,6 +244,12 @@
                         class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium">
                 </div>
 
+                <div class="sm:col-span-2 lg:col-span-4">
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Comentarios</label>
+                    <textarea id="jComentarios" rows="2" placeholder="Escribe aquí cualquier comentario del registro"
+                        class="w-full text-xs rounded-lg border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white font-medium resize-y"></textarea>
+                </div>
+
                 <div class="sm:col-span-2 lg:col-span-2 flex items-end gap-2">
                     <button id="jornadaSubmitBtn" type="submit" class="w-full bg-[#27ae60] hover:bg-[#219653] text-white font-medium text-xs py-2.5 px-4 rounded-lg transition shadow-sm flex items-center justify-center gap-2">
                         <i class="fa-solid fa-floppy-disk"></i> Guardar Registro
@@ -363,6 +369,7 @@
                             <th>CocheTractorCant</th>
                             <th>PrecioVehiculo</th>
                             <th>Vehiculo</th>
+                            <th>Comentarios</th>
                             <th>TotalBruto</th>
                         </tr>
                     </thead>
@@ -386,6 +393,7 @@
                             <td>4</td>
                             <td>4</td>
                             <td>Tractor 1</td>
+                            <td></td>
                             <td>74.00</td>
                         </tr>
                         <tr>
@@ -406,6 +414,7 @@
                             <td>7</td>
                             <td>7</td>
                             <td>Tractor 2</td>
+                            <td></td>
                             <td>323.00</td>
                         </tr>
                     </tbody>
@@ -803,6 +812,7 @@
             setValue('jCoche', jornada.coche);
             setValue('jPrecioVehiculo', jornada.precioVehiculo);
             setValue('jVehiculo', jornada.vehiculo === '-' ? '' : jornada.vehiculo);
+            setValue('jComentarios', jornada.comentarios || '');
 
             const workerForJornada = appState.workers.find(worker => worker.name === jornada.workerName);
             const workerTypeForJornada = jornada.workerType || (workerForJornada && workerForJornada.type);
@@ -891,6 +901,7 @@
                 coche: cantCoche,
                 precioVehiculo: precioVehiculo,
                 vehiculo: document.getElementById('jVehiculo').value.trim() || '-',
+                comentarios: document.getElementById('jComentarios').value.trim(),
                 totalBruto: totalBruto.toFixed(2)
             };
 
@@ -1051,7 +1062,7 @@
             historyCurrentPage = Math.min(Math.max(historyCurrentPage, 1), totalPages);
 
             if (jornadasOrdenadas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="18" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aún no hay jornadas registradas. Rellena el formulario arriba.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="19" class="px-4 py-8 text-center text-xs text-slate-400 italic">Aún no hay jornadas registradas. Rellena el formulario arriba.</td></tr>`;
                 renderHistoryPagination(0);
                 return;
             }
@@ -1105,12 +1116,13 @@
                     <td>${j.coche || 0}</td>
                     <td>${j.precioVehiculo || 0}</td>
                     <td>${escapeHtml(j.vehiculo)}</td>
+                    <td class="whitespace-pre-wrap min-w-48">${escapeHtml(j.comentarios || '')}</td>
                     <td>${j.totalBruto}</td>
                 </tr>
                 `;
             }).join('');
             const mensajeSinResultados = totalRecords === 0
-                ? `<tr><td colspan="18" class="px-4 py-8 text-center text-xs text-slate-400 italic">No hay registros que coincidan con los filtros seleccionados.</td></tr>`
+                ? `<tr><td colspan="19" class="px-4 py-8 text-center text-xs text-slate-400 italic">No hay registros que coincidan con los filtros seleccionados.</td></tr>`
                 : '';
             tbody.innerHTML = filas + mensajeSinResultados;
             renderHistoryPagination(totalRecords);
@@ -1244,9 +1256,16 @@
                 return;
             }
 
-            let csv = "IDRegistro,Mes,Año,Dia,Campaña,Trabajador,TipoPersonal,HorasNormales,PrecioNormal,HorasExtras,PrecioExtra,Besana,Faena,Gasoil,CocheTractorCant,PrecioVehiculo,Vehiculo,TotalBruto\r\n";
+            const quoteCsv = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+            let csv = "IDRegistro,Mes,Año,Dia,Campaña,Trabajador,TipoPersonal,HorasNormales,PrecioNormal,HorasExtras,PrecioExtra,Besana,Faena,Gasoil,CocheTractorCant,PrecioVehiculo,Vehiculo,Comentarios,TotalBruto\r\n";
             appState.jornadas.forEach(j => {
-                csv += `"${j.id}","${j.mes}",${j.year ?? ''},${j.day},"${j.campana || ''}","${j.workerName}","${j.workerType}",${j.hNormales},${j.precioNormal},${j.hExtras},${j.precioExtra},${j.besana},${j.faena},${j.gasoil},${j.coche || 0},${j.precioVehiculo || 0},"${j.vehiculo}",${j.totalBruto}\r\n`;
+                csv += [
+                    quoteCsv(j.id), quoteCsv(j.mes), j.year ?? '', j.day,
+                    quoteCsv(j.campana || ''), quoteCsv(j.workerName), quoteCsv(j.workerType),
+                    j.hNormales, j.precioNormal, j.hExtras, j.precioExtra,
+                    j.besana, j.faena, j.gasoil, j.coche || 0, j.precioVehiculo || 0,
+                    quoteCsv(j.vehiculo), quoteCsv(j.comentarios || ''), j.totalBruto
+                ].join(',') + '\r\n';
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1274,7 +1293,7 @@
                 'IDRegistro', 'Mes', 'Año', 'Dia', 'Campaña', 'Trabajador', 'TipoPersonal',
                 'HorasNormales', 'PrecioNormal', 'HorasExtras', 'PrecioExtra',
                 'Besana', 'Faena', 'Gasoil', 'CocheTractorCant', 'PrecioVehiculo',
-                'Vehiculo', 'TotalBruto'
+                'Vehiculo', 'Comentarios', 'TotalBruto'
             ];
 
             const rows = appState.jornadas.map(j => [
@@ -1295,16 +1314,17 @@
                 Number(j.coche) || 0,
                 Number(j.precioVehiculo) || 0,
                 j.vehiculo || '-',
+                j.comentarios || '',
                 Number(j.totalBruto) || 0
             ]);
 
             const worksheet = window.XLSX.utils.aoa_to_sheet([headers, ...rows]);
-            worksheet['!autofilter'] = { ref: `A1:R${rows.length + 1}` };
+            worksheet['!autofilter'] = { ref: `A1:S${rows.length + 1}` };
             worksheet['!cols'] = [
                 { wch: 15 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 18 }, { wch: 30 },
                 { wch: 15 }, { wch: 16 }, { wch: 15 }, { wch: 14 }, { wch: 14 },
                 { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 18 }, { wch: 17 },
-                { wch: 16 }, { wch: 14 }
+                { wch: 16 }, { wch: 40 }, { wch: 14 }
             ];
 
             const workbook = window.XLSX.utils.book_new();
