@@ -71,6 +71,10 @@
                 <span id="syncBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white shadow-sm">
                     <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Conectado
                 </span>
+                <span id="authUserBadge" class="hidden max-w-64 truncate rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white"></span>
+                <button id="authButton" onclick="handleAuth()" class="bg-white text-slate-800 hover:bg-slate-100 font-medium text-xs px-3 py-2 rounded-lg transition shadow-sm">
+                    Iniciar sesión
+                </button>
                 <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3 py-2 rounded-lg transition shadow-sm flex items-center gap-1.5">
                     <i class="fa-solid fa-file-csv"></i> Exportar CSV
                 </button>
@@ -522,6 +526,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
         import { getFirestore, doc, setDoc, onSnapshot, runTransaction } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+        import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD0z_EapsDSxwMBWdixJcfut9KO7krE4Rc",
@@ -535,6 +540,9 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+        const googleProvider = new GoogleAuthProvider();
+        let unsubscribeFirestore = null;
         let editingJornadaId = null;
         let historyCurrentPage = 1;
         const historyPageSize = 25;
@@ -1355,31 +1363,83 @@
             marker.dataset.updatedAt = new Date().toISOString();
         }
 
-        onSnapshot(docRef, async (docSnap) => {
-            if (docSnap.exists()) {
-                appState = docSnap.data();
-                refreshUI();
-                if (!hasRestoredLastJornadaForm) {
-                    restoreLastJornadaForm({ keepEditing: false });
-                    hasRestoredLastJornadaForm = true;
-                } else if (!editingJornadaId && !jornadaFormHasUnsavedChanges) {
-                    restoreLastJornadaForm({ keepEditing: false });
-                }
-                markPowerBIReady();
+        function updateAuthUI(user) {
+            const authButton = document.getElementById('authButton');
+            const authUserBadge = document.getElementById('authUserBadge');
+            if (!authButton || !authUserBadge) return;
+
+            if (user) {
+                authButton.textContent = 'Cerrar sesión';
+                authUserBadge.textContent = user.email || 'Sesión iniciada';
+                authUserBadge.classList.remove('hidden');
             } else {
-                await setDoc(docRef, appState);
-                refreshUI();
-                if (!hasRestoredLastJornadaForm) {
-                    restoreLastJornadaForm({ keepEditing: false });
-                    hasRestoredLastJornadaForm = true;
-                } else if (!editingJornadaId && !jornadaFormHasUnsavedChanges) {
-                    restoreLastJornadaForm({ keepEditing: false });
-                }
-                markPowerBIReady();
+                authButton.textContent = 'Iniciar sesión';
+                authUserBadge.textContent = '';
+                authUserBadge.classList.add('hidden');
             }
-        }, (error) => {
-            console.error("Error al escuchar Firestore: ", error);
-            markPowerBIReady();
+        }
+
+        window.handleAuth = async function() {
+            try {
+                if (auth.currentUser) {
+                    await signOut(auth);
+                } else {
+                    await signInWithPopup(auth, googleProvider);
+                }
+            } catch (error) {
+                console.error('Error de autenticación:', error);
+                alert('No se ha podido iniciar sesión. Comprueba que el acceso con Google está habilitado en Firebase y que este dominio está autorizado.');
+            }
+        }
+
+        function startFirestoreSync() {
+            if (unsubscribeFirestore) return;
+
+            unsubscribeFirestore = onSnapshot(docRef, async (docSnap) => {
+                if (docSnap.exists()) {
+                    appState = docSnap.data();
+                    refreshUI();
+                    if (!hasRestoredLastJornadaForm) {
+                        restoreLastJornadaForm({ keepEditing: false });
+                        hasRestoredLastJornadaForm = true;
+                    } else if (!editingJornadaId && !jornadaFormHasUnsavedChanges) {
+                        restoreLastJornadaForm({ keepEditing: false });
+                    }
+                    markPowerBIReady();
+                } else {
+                    await setDoc(docRef, appState);
+                    refreshUI();
+                    if (!hasRestoredLastJornadaForm) {
+                        restoreLastJornadaForm({ keepEditing: false });
+                        hasRestoredLastJornadaForm = true;
+                    } else if (!editingJornadaId && !jornadaFormHasUnsavedChanges) {
+                        restoreLastJornadaForm({ keepEditing: false });
+                    }
+                    markPowerBIReady();
+                }
+            }, (error) => {
+                console.error("Error al escuchar Firestore: ", error);
+                markPowerBIReady();
+            });
+        }
+
+        onAuthStateChanged(auth, user => {
+            updateAuthUI(user);
+            if (user) {
+                startFirestoreSync();
+            } else {
+                if (unsubscribeFirestore) {
+                    unsubscribeFirestore();
+                    unsubscribeFirestore = null;
+                }
+                appState = { workers: [], jornadas: [] };
+                refreshUI();
+                const badge = document.getElementById('syncBadge');
+                if (badge) {
+                    badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500 text-white shadow-sm";
+                    badge.innerHTML = '<i class="fa-solid fa-lock text-[8px]"></i> Inicia sesión para sincronizar';
+                }
+            }
         });
     </script>
 </body>
